@@ -1,0 +1,14 @@
+# Секреты
+.env
+
+# Виртуальное окружение
+venv/
+.venv/
+
+# Логи
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
