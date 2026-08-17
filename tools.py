@@ -1,43 +1,55 @@
-from logger import logger
+import sqlite3
+import os
+from datetime import datetime
 
 def secure_calculator(a: float, b: float, operation: str) -> str:
-    """
-    Безопасный калькулятор. Никаких eval(), только строгая проверка операций.
-    """
-    logger.info(f"Tool call: secure_calculator(a={a}, b={b}, operation='{operation}')")
-   
-    if not isinstance(a, (int, float)) or not isinstance(b, (int, float)):
-        logger.warning("Попытка передать нечисловые значения в калькулятор.")
-        return "Ошибка: Аргументы должны быть числами."
+    """Безопасный калькулятор для базовых математических операций."""
+    try:
+        if operation == "add":
+            return str(a + b)
+        elif operation == "subtract":
+            return str(a - b)
+        elif operation == "multiply":
+            return str(a * b)
+        elif operation == "divide":
+            if b == 0:
+                return "Ошибка: Деление на ноль запрещено."
+            return str(a / b)
+        else:
+            return f"Неизвестная операция: {operation}"
+    except Exception as e:
+        return f"Ошибка вычислений: {str(e)}"
 
-    if operation == "add":
-        return str(a + b)
-    elif operation == "subtract":
-        return str(a - b)
-    elif operation == "multiply":
-        return str(a * b)
-    elif operation == "divide":
-        if b == 0:
-            return "Ошибка: Деление на ноль невозможно."
-        return str(a / b)
-    else:
-        logger.warning(f"Попытка использовать неизвестную операцию: {operation}")
-        return "Ошибка: Неизвестная операция. Разрешены только add, subtract, multiply, divide."
+def query_local_db(query_text: str) -> str:
+    """Выполняет безопасный read-only SQL-запрос к локальной тестовой базе данных."""
+    # Защита: разрешаем только SELECT запросы, блокируем опасные ключевые слова
+    forbidden = ["drop", "delete", "insert", "update", "alter", "truncate", "create"]
+    lower_query = query_text.lower()
+    if any(word in lower_query for word in forbidden):
+        return "Ошибка безопасности: Разрешены только операции чтения (SELECT)."
+    
+    db_path = "local_data.db"
+    # Создадим тестовую базу, если её нет
+    if not os.path.exists(db_path):
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS info (id INTEGER PRIMARY KEY, topic TEXT, content TEXT)")
+        cursor.execute("INSERT OR IGNORE INTO info (id, topic, content) VALUES (1, 'security', 'All inputs must be strictly validated.')")
+        cursor.execute("INSERT OR IGNORE INTO info (id, topic, content) VALUES (2, 'internship', 'Task 2 requires multi-tool orchestration.')")
+        conn.commit()
+        conn.close()
 
-CALCULATOR_TOOL_SCHEMA = {
-    "name": "secure_calculator",
-    "description": "Perform basic arithmetic operations on two numbers. Do NOT try to calculate mathematically without using this tool.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "a": {"type": "number", "description": "First number"},
-            "b": {"type": "number", "description": "Second number"},
-            "operation": {
-                "type": "string",
-                "enum": ["add", "subtract", "multiply", "divide"],
-                "description": "The mathematical operation to perform"
-            }
-        },
-        "required": ["a", "b", "operation"]
-    }
-}
+    try:
+        # Открываем соединение строго в режиме read-only через URI
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        cursor = conn.cursor()
+        cursor.execute(query_text)
+        rows = cursor.fetchall()
+        conn.close()
+        return str(rows)
+    except Exception as e:
+        return f"Ошибка при запросе к БД: {str(e)}"
+
+def get_system_time() -> str:
+    """Возвращает текущее системное время и дату."""
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -1,23 +1,27 @@
-from agent import SecureAgent
+import os
+from dotenv import load_dotenv
+from agent import MultiToolAgent
+
+# Загружаем ключи из .env
+load_dotenv()
+api_key = os.getenv("ANTHROPIC_API_KEY")
+
+if not api_key:
+    print("Ошибка: ANTHROPIC_API_KEY не найден в переменных окружения!")
+    exit(1)
 
 def main():
-    print("Инициализация Secure AI Agent...")
-    try:
-        agent = SecureAgent()
-    except Exception as e:
-        print(f"Ошибка запуска: {e}")
-        return
-
+    print("Инициализация Multi-Tool Secure AI Agent...")
+    agent = MultiToolAgent(api_key=api_key)
     print("Агент готов! (введите 'exit' для выхода)")
-    print("-" * 40)
     
     while True:
         try:
             user_input = input("\nВы: ")
-            if user_input.lower().strip() in ['exit', 'quit', 'выход']:
+            if user_input.lower() in ["exit", "выход"]:
                 print("Завершение работы.")
                 break
-                
+            
             if not user_input.strip():
                 continue
                 
@@ -25,10 +29,8 @@ def main():
             print(f"Агент: {response}")
             
         except KeyboardInterrupt:
-            print("\nПринудительное завершение.")
+            print("\nЗавершение работы.")
             break
-        except Exception as e:
-            print(f"\nСбой в интерфейсе: {e}")
 
 if __name__ == "__main__":
     main()

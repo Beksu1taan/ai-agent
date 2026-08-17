@@ -1,29 +1,14 @@
-import logging
-import re
 import os
-from logging.handlers import RotatingFileHandler
+import re
+from datetime import datetime
 
-class SecureFormatter(logging.Formatter):
-    """Кастомный форматтер для маскировки секретов (например, API-ключей)."""
-    def format(self, record):
-        message = super().format(record)
-        message = re.sub(r'sk-ant-api\d[a-zA-Z0-9\-_]+', 'sk-ant-api-***[REDACTED]', message)
-        return message
-
-def setup_logger():
-    if not os.path.exists('logs'):
-        os.makedirs('logs')
-
-    logger = logging.getLogger('SecureAgent')
-    logger.setLevel(logging.INFO)
-
-    handler = RotatingFileHandler('logs/agent.log', maxBytes=1024*1024, backupCount=3)
-    formatter = SecureFormatter('%(asctime)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter)
-   
-    if not logger.handlers:
-        logger.addHandler(handler)
-        
-    return logger
-
-logger = setup_logger()
+def log_event(message: str):
+    """Безопасно логирует событие, маскируя ключи и токены."""
+    os.makedirs("logs", exist_ok=True)
+    
+    masked_message = re.sub(r'sk-ant-[a-zA-Z0-9\-_]+', '[REDACTED_API_KEY]', message)
+    
+    log_entry = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {masked_message}\n"
+    
+    with open("logs/agent_audit.log", "a", encoding="utf-8") as f:
+        f.write(log_entry)
