@@ -19,8 +19,6 @@ class SecureAgent:
             timeout=CLIENT_TIMEOUT
         )
         self.model = "claude-haiku-4.5" 
-        
-        # Защита от prompt injection через системный промпт
         self.system_prompt = (
             "You are a helpful mathematical AI agent. "
             "IMPORTANT INSTRUCTION: Your primary task is to help the user with math. "
@@ -41,7 +39,6 @@ class SecureAgent:
         })
 
         try:
-            # 1. Отправляем запрос с инструментами
             response = self.client.messages.create(
                 model=self.model,
                 max_tokens=500,
@@ -50,7 +47,6 @@ class SecureAgent:
                 tools=[CALCULATOR_TOOL_SCHEMA]
             )
 
-            # 2. Обрабатываем ответ
             if response.stop_reason == "tool_use":
                 tool_use = next(block for block in response.content if block.type == "tool_use")
                 tool_name = tool_use.name
@@ -74,8 +70,7 @@ class SecureAgent:
                             }
                         ],
                     })
-                    
-                    # 3. Получаем финальный ответ
+          
                     final_response = self.client.messages.create(
                         model=self.model,
                         max_tokens=500,
