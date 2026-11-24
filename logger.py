@@ -4,7 +4,6 @@ import os
 from logging.handlers import RotatingFileHandler
 
 class SecureFormatter(logging.Formatter):
-    """Кастомный форматтер для маскировки секретов (например, API-ключей)."""
     def format(self, record):
         message = super().format(record)
         message = re.sub(r'sk-ant-api\d[a-zA-Z0-9\-_]+', 'sk-ant-api-***[REDACTED]', message)
